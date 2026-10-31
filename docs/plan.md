@@ -5,7 +5,7 @@
 ## Context
 Lint, tests and the build only run when someone remembers to run them. This slice makes GitHub run all three on every push and pull request (PR), and show the result. It covers R1 to R4 in `docs/spec.md`. Deploys come in slices 2 and 3.
 
-Status: plan approved; the repo is public. Milestone 1 is in progress.
+Status: plan approved; the repo is public. Milestone 1 is done; Milestone 2 is in progress.
 
 ## The terms, in plain English
 | Term | Meaning | In this slice | Azure DevOps equivalent |
@@ -21,7 +21,7 @@ Status: plan approved; the repo is public. Milestone 1 is in progress.
 
 ## Files that change
 - `.github/workflows/ci.yml`: new, described below
-- `README.md`: add a CI section; add the required `ci` check to the branch protection checklist item
+- `README.md`: add a CI section; add a checklist item for the required `ci` check
 - `docs/decisions.md`: add the decisions below
 - `docs/plan.md`: this plan
 - `docs/spec.md`, `intent/2026-10-31-ci-cd-pipeline.md`: already written, committed with this slice
@@ -98,4 +98,4 @@ Status: plan approved; the repo is public. Milestone 1 is in progress.
 ## Left alone
 - `npm audit` reports 5 moderate issues, all through ESLint's dev dependencies. The suggested fix would install a very old ESLint (4.0.0), so it isn't one to apply. The site doesn't ship these packages, and CI doesn't run the audit.
 - Deploys, previews and Prettier in CI.
-- ESP leftovers noted in the previous plan.
+- ESP leftovers noted in the previous plan, except the "hardware" wording in `docs/spec.md`, which went when the spec was written.

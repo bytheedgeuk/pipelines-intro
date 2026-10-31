@@ -46,4 +46,4 @@ GitHub Actions runs `make lint`, `make test` and `make build` on every push and 
       (Settings → Branches: require a pull request before merging, no bypassing)
 - [ ] After CI has run once, make it required
       (Settings → Branches: require status checks to pass, and select `ci`)
-- [ ] Write your first intent: the walking skeleton
+- [x] Write your first intent
