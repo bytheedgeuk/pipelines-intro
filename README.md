@@ -1,14 +1,33 @@
-# <Project name>
+# pipelines-intro
 
-One or two lines: what this is and who it's for.
+A tiny static website with one JS function, a unit test and a linter, built with npm. It's a practice project for learning DevOps.
 
-## Build, test, flash
+## Setup
+Requires Node `^20.19.0 || ^22.13.0 || >=24`, npm and `make`. The local preview also needs `python3`.
 ```
-make build   # compile
-make test    # host-side tests
-make lint    # format/lint check
-make flash   # hardware projects only
+npm install
 ```
+
+## Build, test, lint
+```
+make build   # copy src/ to dist/
+make test    # unit tests (node:test)
+make lint    # ESLint, zero warnings allowed
+```
+
+## Preview locally
+```
+make build
+python3 -m http.server --bind 127.0.0.1 -d dist
+```
+Open http://localhost:8000. Opening `dist/index.html` directly won't work, because browsers block ES modules on `file://`.
+
+## Docs
+- `docs/spec.md`: requirements and architecture
+- `docs/plan.md`: plan for the current slice
+- `docs/decisions.md`: decisions and why they were made
+- `intent/`: ideas
+- `REVIEW.md`: review instructions
 
 ## How work flows (AI-native SDLC, solo edition)
 1. **Intent:** brainstorm, then `/write-intent` → `intent/YYYY-MM-DD-<slug>.md`
@@ -20,11 +39,6 @@ make flash   # hardware projects only
 7. **Learn:** repeated mistake → `CLAUDE.md`; repeated review comment → `REVIEW.md`
 
 ## First-time setup checklist
-- [ ] Rename `<Project name>` here and in `CLAUDE.md`
-- [ ] Fill in the real commands in `Makefile` until `make build` and `make test` pass
-- [ ] Paste the healthy output of each command into `CLAUDE.md`
-- [ ] `git init`, push to GitHub, then enable branch protection on `main`
+- [ ] Enable branch protection on `main`
       (Settings → Branches: require a pull request before merging)
-- [ ] Fill in skip paths in `REVIEW.md` (e.g. `.pio/`, `managed_components/`, `build/`)
-- [ ] Make the hook executable: `chmod +x .claude/hooks/format.sh`
 - [ ] Write your first intent: the walking skeleton

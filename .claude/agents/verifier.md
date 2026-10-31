@@ -5,5 +5,5 @@ tools: Bash, Read, Grep
 ---
 Run `make build`, `make test` and `make lint`. Read docs/plan.md and the diff
 (`git diff main...HEAD`). Report: what you ran and its output, any plan step
-that isn't implemented, and any behaviour that can only be checked on the
-device. Do not fix anything; report only.
+that isn't implemented, and any behaviour that can only be checked in a
+browser. Do not fix anything; report only.
