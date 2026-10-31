@@ -18,9 +18,9 @@ make lint    # ESLint, zero warnings allowed
 ## Preview locally
 ```
 make build
-python3 -m http.server --bind 127.0.0.1 -d dist
+python3 -m http.server 8001 --bind 127.0.0.1 -d dist
 ```
-Open http://localhost:8000. Opening `dist/index.html` directly won't work, because browsers block ES modules on `file://`.
+Open http://localhost:8001. Opening `dist/index.html` directly won't work, because browsers block ES modules on `file://`.
 
 ## Docs
 - `docs/spec.md`: requirements and architecture
