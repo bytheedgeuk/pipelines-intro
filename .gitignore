@@ -3,6 +3,14 @@ build/
 .pio/
 managed_components/
 sdkconfig.old
+dist/
+
+# Dependencies
+node_modules/
+
+# Deploy tool state
+.vercel/
+.wrangler/
 
 # Local Claude settings (personal overrides; settings.json is shared)
 .claude/settings.local.json
