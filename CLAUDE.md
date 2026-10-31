@@ -5,7 +5,7 @@ Rule: when Claude makes the same mistake twice, the fix goes in here. Keep this 
 
 ## Commands
 - Build: `make build` (healthy output ends with "Built to dist/")
-- Test: `make test` (exit 0; summary shows "fail 0")
+- Test: `make test` (exit 0; summary shows at least 1 test and "fail 0")
 - Lint: `make lint` (exit 0; no output when clean)
 
 ## Verifying your work
@@ -33,7 +33,7 @@ I'm learning DevOps, so:
 - `test/` holds unit tests for that logic, run with `node:test`.
 
 ## Conventions
-- Language/framework versions: Node 20.19+, ES modules, ESLint 10, Prettier 3.
+- Language/framework versions: Node `^20.19.0 || ^22.13.0 || >=24`, ES modules, ESLint 10, Prettier 3.
 - Naming, error handling, logging rules that matter: none yet.
 
 ## Things Claude gets wrong

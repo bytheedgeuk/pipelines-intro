@@ -7,7 +7,7 @@
 
 Milestone 1 (npm project + Makefile):
 - `.gitignore`: add `node_modules/`, `dist/`, `.vercel/`, `.wrangler/`
-- `package.json`, `package-lock.json`: private ES module package; `engines` set to Node 20.19+ (ESLint 10's minimum); `build`, `test`, `lint` scripts; devDeps `eslint`, `@eslint/js`, `prettier`
+- `package.json`, `package-lock.json`: private ES module package; `engines` set to ESLint 10's Node range (`^20.19.0 || ^22.13.0 || >=24`); `build`, `test`, `lint` scripts; devDeps `eslint`, `@eslint/js`, `prettier`
 - `eslint.config.js`: recommended rules; ignore `dist/`, `.vercel/`, `.wrangler/`
 - `src/greet.js`, `src/index.html`, `src/style.css`: the site; delete `src/.gitkeep` so it doesn't reach `dist/`
 - `test/greet.test.js`: unit test using `node:test`; delete `test/smoke.sh`
@@ -16,7 +16,7 @@ Milestone 1 (npm project + Makefile):
 
 Milestone 2 (Claude config + docs):
 - `CLAUDE.md`: real name and description; remove hardware references; real healthy output in Commands; add Learning section
-- `.claude/settings.json`: allow `Bash(npm *)`, `Bash(gh run view *)`, `Bash(gh pr view *)`; remove `make flash`
+- `.claude/settings.json`: allow `Bash(npm ci)`, `Bash(npm test)`, `Bash(npm run build)`, `Bash(npm run lint)`, `Bash(gh run view *)`, `Bash(gh pr view *)`; remove `make flash`
 - `.claude/hooks/format.sh`: Prettier for JS, HTML, CSS and JSON, using `node_modules/.bin/prettier`
 - `REVIEW.md`: skip `node_modules/`, `dist/`, `.vercel/`, `.wrangler/`
 - `README.md`: name, setup, commands, local preview; drop flash
@@ -34,7 +34,8 @@ No CI workflow in this slice.
    Checkpoint: stop, paste output, list what couldn't be verified, wait for go-ahead to push and open a PR.
 
 ## Risks
-- `Bash(npm *)` is broad: `npm install` runs package install scripts without a prompt.
+- `npm install` and other npm commands prompt, because only the four exact npm commands are allowed.
+- The build only skips dotfiles at the top of `src/`; anything else in `src/` reaches `dist/`.
 - Prettier runs through the hook only, so `make lint` doesn't catch hand-edit formatting.
 - The hook reformats `.claude/settings.json` on its next edit.
 
@@ -43,7 +44,6 @@ How we'll know it works: `make build`, `make test` and `make lint` pass; the tes
 
 ## Left alone
 Not requested; ESP leftovers stay unless swept later:
-- `.claude/agents/verifier.md`: "on the device"
 - `docs/spec.md`, `intent/_TEMPLATE.md`: "hardware" wording
 - `.gitignore`: `.pio/`, `managed_components/`, `sdkconfig.old`, `secrets.h`
 - `.claude/settings.json`: `Read(**/secrets.h)` deny

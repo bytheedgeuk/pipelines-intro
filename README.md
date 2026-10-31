@@ -3,7 +3,7 @@
 A tiny static website with one JS function, a unit test and a linter, built with npm. It's a practice project for learning DevOps.
 
 ## Setup
-Requires Node 20.19+ and npm.
+Requires Node `^20.19.0 || ^22.13.0 || >=24`, npm and `make`. The local preview also needs `python3`.
 ```
 npm install
 ```
@@ -18,7 +18,7 @@ make lint    # ESLint, zero warnings allowed
 ## Preview locally
 ```
 make build
-python3 -m http.server -d dist
+python3 -m http.server --bind 127.0.0.1 -d dist
 ```
 Open http://localhost:8000. Opening `dist/index.html` directly won't work, because browsers block ES modules on `file://`.
 
