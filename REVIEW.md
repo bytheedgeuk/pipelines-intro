@@ -24,5 +24,5 @@ Run three passes and tag each finding with its pass:
 - Flag when the change makes a line in `CLAUDE.md` out of date.
 
 ## Do not report
-- Generated or vendored files: `<paths, e.g. .pio/ build/ managed_components/>`
+- Generated or vendored files: `node_modules/`, `dist/`, `.vercel/`, `.wrangler/`
 - Anything the linter/formatter already enforces.

@@ -9,24 +9,23 @@
       "Bash(git log *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git checkout -b *)"
+      "Bash(git checkout -b *)",
+      "Bash(npm *)",
+      "Bash(gh run view *)",
+      "Bash(gh pr view *)"
     ],
-    "ask": [
-      "Bash(make flash)",
-      "Bash(git push *)"
-    ],
-    "deny": [
-      "Read(.env*)",
-      "Read(**/secrets.h)"
-    ]
+    "ask": ["Bash(git push *)"],
+    "deny": ["Read(.env*)", "Read(**/secrets.h)"]
   },
   "hooks": {
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format.sh" }
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format.sh"
+          }
         ]
       }
     ]
