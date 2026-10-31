@@ -18,3 +18,7 @@ One line per decision: date, what, why. Newest at the bottom.
 - 2026-10-31: CI doesn't cache dependencies because the install is small, and it's one less thing to explain or debug.
 - 2026-10-31: GitHub's own actions are pinned to major version tags, for readability. Third-party actions that handle secrets get pinned to an exact commit, because a moved tag there could expose a secret.
 - 2026-10-31: CI has no Prettier check because the requirement names three commands and each PR covers one concept. This answers the "revisit when CI lands" note above; it could be its own later PR.
+- 2026-10-31: CI jobs are named `ci (push)` and `ci (pull_request)`, and only the PR one is required, because GitHub warns that duplicate check names can give ambiguous results.
+- 2026-10-31: The repo allows squash-merging only, so temporary commits on a branch never reach `main`'s history.
+- 2026-10-31: Branches must be up to date before merging, so a green result can't go stale when `main` moves. On a solo repo this rarely adds work.
+- 2026-10-31: CI's checkout doesn't keep its token on disk, because no later step needs it and dependency scripts run in the same job.

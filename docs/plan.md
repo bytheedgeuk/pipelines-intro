@@ -5,14 +5,14 @@
 ## Context
 Lint, tests and the build only run when someone remembers to run them. This slice makes GitHub run all three on every push and pull request (PR), and show the result. It covers R1 to R4 in `docs/spec.md`. Deploys come in slices 2 and 3.
 
-Status: plan approved; the repo is public. Milestones 1 and 2 are done; waiting for the PR to be reviewed and merged.
+Status: plan approved; the repo is public. Milestones 1 and 2 are done, with code review fixes applied; waiting for the PR to be reviewed and merged.
 
 ## The terms, in plain English
 | Term | Meaning | In this slice | Azure DevOps equivalent |
 |---|---|---|---|
 | **Workflow** | An automated process, written as a YAML file in the repo | `.github/workflows/ci.yml`, named "CI" | Pipeline |
 | **Trigger** | The event that starts a workflow | A push or a PR | `trigger` and `pr` |
-| **Job** | A group of steps that run together on one machine | One job, `ci` | Job |
+| **Job** | A group of steps that run together on one machine | One job, shown as `ci (push)` or `ci (pull_request)` | Job |
 | **Step** | One task in a job, run in order. If one fails, the rest are skipped by default | Six, listed below | Step |
 | **Runner** | The temporary machine that runs a job, wiped afterwards | GitHub-hosted Ubuntu | Agent |
 | **Action** | A ready-made, reusable step someone has published | `checkout`, `setup-node` | Task |
@@ -31,9 +31,9 @@ Status: plan approved; the repo is public. Milestones 1 and 2 are done; waiting 
 ## What the workflow does
 - **Triggers:** every push to any branch, and every PR.
 - **Permissions:** read-only access to the repo.
-- **Job:** one job, `ci`, on `ubuntu-latest`, with a 10-minute time limit.
+- **Job:** one job, on `ubuntu-latest`, with a 10-minute time limit. It shows as `ci (push)` or `ci (pull_request)`, depending on what started it.
 - **Steps, in order:**
-  1. Download the code (`actions/checkout@v7`)
+  1. Download the code (`actions/checkout@v7`), without keeping its token on disk
   2. Install Node 24 (`actions/setup-node@v7`)
   3. `npm ci`, which installs the exact versions in `package-lock.json`
   4. `make lint`
@@ -50,6 +50,7 @@ Status: plan approved; the repo is public. Milestones 1 and 2 are done; waiting 
 - Don't cache dependencies: the install is small, and it's one less thing to explain or debug.
 - Pin GitHub's own actions to major version tags, for readability. Third-party actions that handle secrets, such as `wrangler-action` in slice 2, get pinned to an exact commit, because a moved tag there could expose a secret.
 - No Prettier check in CI: the requirement names three commands, and each PR covers one concept. This answers the "revisit when CI lands" note. It could be its own later PR.
+- From code review: use distinct job names and require only the PR one; allow squash-merging only; require branches to be up to date; don't keep the checkout token on disk.
 
 ## Order of work
 1. **Milestone 1: write it locally.** Write the workflow and docs on `ci/github-actions`, then commit only the files listed above.
@@ -67,23 +68,16 @@ Status: plan approved; the repo is public. Milestones 1 and 2 are done; waiting 
 
 ## What needs doing by hand
 **Slice 1, no accounts or secrets needed:**
-1. Review and merge the PR.
-2. After CI has run at least once, go to Settings → Branches, edit the rule for `main`, turn on "Require status checks to pass", and select `ci`. This is what turns a red CI run from a warning into a block. The rule already requires a PR, with no approvals and no bypassing.
+1. Review and squash-merge the PR.
+2. Go to Settings → Branches and edit the rule for `main`. Turn on "Require status checks to pass", select `ci (pull_request)`, and turn on "Require branches to be up to date". This is what turns a red CI run from a warning into a block. The rule already requires a PR, with no approvals and no bypassing.
 
-**Slice 2:**
-- Before it starts, decide between Cloudflare Pages and Workers (see `docs/spec.md`).
-- Create a Cloudflare account and the project.
-- Create an API token with only the Cloudflare Pages Edit permission, and find the account ID.
-- Add them to GitHub Secrets as `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Claude never sees or handles these.
-- Add `cloudflare/wrangler-action` to the allowed actions, because the repo currently allows only GitHub-owned ones.
-
-**Slice 3:** nothing new is expected. The slice 3 plan will confirm this.
+Manual steps for later slices are in `docs/spec.md`.
 
 ## Risks
 - The runner uses Node 24 and the local machine uses Node 20, so something could pass in one place and fail in the other. A fresh clone passes on Node 20; the first CI run is the first test on Node 24.
 - The repo is public, so anyone can read its code, history and PRs, and fork it. A scan of all branches' history and the PR text found no secrets. Going back to private is possible, but anything already copied stays copied. Actions on standard runners is free for public repos.
 - PRs from forks can't reach secrets, and workflow runs from all outside contributors need approval.
-- `main` already blocks direct pushes, so every change, including this slice, has to go through a PR. Until `ci` is added to the rule, a red run still can't block a merge.
+- `main` already blocks direct pushes, so every change, including this slice, has to go through a PR. Until `ci (pull_request)` is added to the rule, a red run still can't block a merge.
 - GitHub can only show a workflow's real behaviour once it's pushed, so the local syntax check proves little.
 
 ## Proof
@@ -93,7 +87,7 @@ Status: plan approved; the repo is public. Milestones 1 and 2 are done; waiting 
 
 **Not proven in CI:** a failing test or build. Test failure is left for the exercise. Each command runs as its own step, and a failing step fails the run the same way.
 
-**Check by hand:** that the PR page shows the `ci` checks, and that branch protection blocks a merge when `ci` is red.
+**Check by hand:** that the PR page shows both checks, and that branch protection blocks a merge when `ci (pull_request)` is red.
 
 ## Left alone
 - `npm audit` reports 5 moderate issues, all through ESLint's dev dependencies. The suggested fix would install a very old ESLint (4.0.0), so it isn't one to apply. The site doesn't ship these packages, and CI doesn't run the audit.
