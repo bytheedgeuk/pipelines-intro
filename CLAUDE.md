@@ -15,10 +15,14 @@ If something can't be verified here (e.g. how the page renders in a browser), sa
 and list exactly what I should check by hand.
 
 ## Learning
-I'm learning DevOps, so:
-- Explain changes before making them.
-- Explain CI failures before fixing them.
+I'm a PM learning DevOps (I can read code, but I'm not deeply technical), so:
+- Explain changes before making them, in plain English; define jargon the first time.
+- Explain CI failures before fixing them: show the relevant log lines and the root cause.
 - Use plan mode for workflow changes.
+- One concept per PR. After each slice, give a 3–5 bullet recap and one
+  "break it on purpose" exercise.
+- Never handle deploy tokens or secrets; tell me what to add to GitHub Secrets.
+- Where useful, note the Azure DevOps Pipelines equivalent.
 
 ## Workflow
 - Ideas live in `intent/`; requirements and architecture in `docs/spec.md`.
