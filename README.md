@@ -22,6 +22,9 @@ python3 -m http.server 8001 --bind 127.0.0.1 -d dist
 ```
 Open http://localhost:8001. Opening `dist/index.html` directly won't work, because browsers block ES modules on `file://`.
 
+## CI
+GitHub Actions runs `make lint`, `make test` and `make build` on every push and pull request, on Node 24. The workflow is in `.github/workflows/ci.yml`, and results show in the repo's Actions tab and on each PR. A push to a branch with an open PR runs CI twice: `ci (push)` checks the branch, and `ci (pull_request)` checks the branch merged with `main`. The PR run doesn't start while a PR has merge conflicts.
+
 ## Docs
 - `docs/spec.md`: requirements and architecture
 - `docs/plan.md`: plan for the current slice
@@ -39,6 +42,8 @@ Open http://localhost:8001. Opening `dist/index.html` directly won't work, becau
 7. **Learn:** repeated mistake → `CLAUDE.md`; repeated review comment → `REVIEW.md`
 
 ## First-time setup checklist
-- [ ] Enable branch protection on `main`
-      (Settings → Branches: require a pull request before merging)
-- [ ] Write your first intent: the walking skeleton
+- [x] Enable branch protection on `main`
+      (Settings → Branches: require a pull request before merging, no bypassing)
+- [ ] After CI has run once, make it required
+      (Settings → Branches: require status checks to pass, select `ci (pull_request)`, and require branches to be up to date)
+- [x] Write your first intent

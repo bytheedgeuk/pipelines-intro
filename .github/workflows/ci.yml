@@ -1,0 +1,40 @@
+# Runs the same checks a person runs locally, on every push and pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Read-only: CI only needs to download the code.
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    # Push and PR runs get different names, so branch protection can require one.
+    name: ci (${{ github.event_name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download the code
+        uses: actions/checkout@v7
+        with:
+          # No later step needs the token, so don't leave it on disk.
+          persist-credentials: false
+
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
+
+      - name: Build
+        run: make build
