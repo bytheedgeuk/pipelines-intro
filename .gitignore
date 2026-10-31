@@ -1,0 +1,17 @@
+# Build output
+build/
+.pio/
+managed_components/
+sdkconfig.old
+
+# Local Claude settings (personal overrides; settings.json is shared)
+.claude/settings.local.json
+
+# Secrets
+.env
+secrets.h
+*.key
+
+# OS / editor
+.DS_Store
+.vscode/
