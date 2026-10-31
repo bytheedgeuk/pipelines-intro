@@ -5,7 +5,7 @@
 ## Context
 Lint, tests and the build only run when someone remembers to run them. This slice makes GitHub run all three on every push and pull request (PR), and show the result. It covers R1 to R4 in `docs/spec.md`. Deploys come in slices 2 and 3.
 
-Status: plan approved; the repo is public. Milestone 1 is done; Milestone 2 is in progress.
+Status: plan approved; the repo is public. Milestones 1 and 2 are done; waiting for the PR to be reviewed and merged.
 
 ## The terms, in plain English
 | Term | Meaning | In this slice | Azure DevOps equivalent |
