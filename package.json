@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
     "build": "rm -rf dist && mkdir dist && cp -R src/. dist/ && echo 'Built to dist/'",
     "test": "node --test",

@@ -7,9 +7,9 @@
 
 Milestone 1 (npm project + Makefile):
 - `.gitignore`: add `node_modules/`, `dist/`, `.vercel/`, `.wrangler/`
-- `package.json`, `package-lock.json`: private ES module package; `build`, `test`, `lint` scripts; devDeps `eslint`, `@eslint/js`, `prettier`
+- `package.json`, `package-lock.json`: private ES module package; `engines` set to Node 20.19+ (ESLint 10's minimum); `build`, `test`, `lint` scripts; devDeps `eslint`, `@eslint/js`, `prettier`
 - `eslint.config.js`: recommended rules; ignore `dist/`, `.vercel/`, `.wrangler/`
-- `src/greet.js`, `src/index.html`, `src/style.css`: the site
+- `src/greet.js`, `src/index.html`, `src/style.css`: the site; delete `src/.gitkeep` so it doesn't reach `dist/`
 - `test/greet.test.js`: unit test using `node:test`; delete `test/smoke.sh`
 - `Makefile`: `build`, `test`, `lint` call npm; remove `flash`
 - `docs/plan.md`, `docs/decisions.md`

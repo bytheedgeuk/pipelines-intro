@@ -3,7 +3,7 @@
 A tiny static website with one JS function, a unit test and a linter, built with npm. It's a practice project for learning DevOps.
 
 ## Setup
-Requires Node 20 and npm.
+Requires Node 20.19+ and npm.
 ```
 npm install
 ```

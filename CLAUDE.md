@@ -33,7 +33,7 @@ I'm learning DevOps, so:
 - `test/` holds unit tests for that logic, run with `node:test`.
 
 ## Conventions
-- Language/framework versions: Node 20, ES modules, ESLint 10, Prettier 3.
+- Language/framework versions: Node 20.19+, ES modules, ESLint 10, Prettier 3.
 - Naming, error handling, logging rules that matter: none yet.
 
 ## Things Claude gets wrong
