@@ -25,6 +25,15 @@ Open http://localhost:8001. Opening `dist/index.html` directly won't work, becau
 ## CI
 GitHub Actions runs `make lint`, `make test` and `make build` on every push and pull request, on Node 24. The workflow is in `.github/workflows/ci.yml`, and results show in the repo's Actions tab and on each PR. A push to a branch with an open PR runs CI twice: `ci (push)` checks the branch, and `ci (pull_request)` checks the branch merged with `main`. The PR run doesn't start while a PR has merge conflicts.
 
+## Deploy
+Live site: https://pipelines-intro.pages.dev
+
+A merge to `main` that passes CI publishes `dist/` to Cloudflare Pages, with no manual step. The `deploy` job in `.github/workflows/ci.yml` does this, and shows as skipped on other branches and on PRs.
+
+**To undo a bad deploy:** in Cloudflare, open the project's Deployments page, open the menu on an earlier production deployment and choose "Rollback to this deployment". Then revert the PR, otherwise the next merge publishes the bad change again.
+
+The `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets are in the `production` environment on GitHub, which only `main` can use. Running Wrangler, Cloudflare's command-line tool, on your own machine needs Node 22 or newer; day-to-day work doesn't need it. To make Node 24 your default with nvm, use `nvm alias default 24`.
+
 ## Docs
 - `docs/spec.md`: requirements and architecture
 - `docs/plan.md`: plan for the current slice
@@ -44,6 +53,6 @@ GitHub Actions runs `make lint`, `make test` and `make build` on every push and 
 ## First-time setup checklist
 - [x] Enable branch protection on `main`
       (Settings → Branches: require a pull request before merging, no bypassing)
-- [ ] After CI has run once, make it required
+- [x] After CI has run once, make it required
       (Settings → Branches: require status checks to pass, select `ci (pull_request)`, and require branches to be up to date)
 - [x] Write your first intent

@@ -34,16 +34,27 @@ Vercel doesn't fit better here, for three reasons:
 ### Deploy method: GitHub Actions with Direct Upload
 The workflow uploads `dist/` to Cloudflare, rather than Cloudflare building from the repo through its Git integration. This keeps every stage visible in one pipeline, and it's the simplest way to meet R7. Cloudflare doesn't allow a Direct Upload project to switch to Git integration later; switching would mean creating a new project.
 
+The deploy is a separate job that runs only on a push to `main`, and only if the `ci` job passed:
+
+```
+ci: lint, test, build, save dist/ ──pass──> deploy: download dist/, upload to Cloudflare
+```
+
+- The job holding the token has no checkout and runs none of the repo's code, so a compromised dev dependency in `ci` can't reach the token.
+- It publishes the files `ci` tested, rather than building them again.
+- The secrets live in a `production` environment that only `main` can use.
+
 ## Interfaces
 - GitHub Actions: `.github/workflows/`.
-- Cloudflare Pages, from slice 2: `wrangler pages deploy`, using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+- Cloudflare Pages: project `pipelines-intro`, live at https://pipelines-intro.pages.dev, deployed with `wrangler pages deploy`, using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Concerns flagged
 - **Duplicate runs (accepted):** R1 and R2 together mean a push to a branch with an open PR runs CI twice, once for the push and once for the PR. Each run checks something slightly different: the branch as pushed, and the branch merged with `main`. This is kept because it's what was asked for. Narrowing the push trigger to `main` would remove it, but pushes to a branch with no PR would then go unchecked.
 - **PRs with merge conflicts (accepted):** GitHub doesn't start the PR run while a PR has merge conflicts, so R2 only applies once the conflicts are fixed. The required check keeps such a PR unmergeable until then.
-- **Branch protection (required check still to add):** GitHub doesn't offer branch protection on a private repo on GitHub Free, so the repo was made public. `main` now requires a PR, with no bypassing. Until `ci (pull_request)` is added as a required check, a red CI run warns but can't block a merge.
-- **Secrets and untrusted code (slices 2 and 3):** today's CI is safe to run on any PR because it has no secrets. Once `CLOUDFLARE_API_TOKEN` exists, `npm ci`, lint, test and build must not run for untrusted PRs in any job that has the token, and `pull_request_target` stays out.
-- **Pages or Workers (open, must be settled before slice 2):** Cloudflare's Pages docs now say "Start new projects with Workers". They don't say Pages is deprecated, and it was the host requested, so this spec stays on Pages until told otherwise. Slice 1 isn't affected.
+- **Branch protection (resolved):** GitHub doesn't offer branch protection on a private repo on GitHub Free, so the repo was made public. `main` requires a PR and a passing `ci (pull_request)` check, with no bypassing.
+- **Secrets and untrusted code (slices 2 and 3):** `npm ci`, lint, test and build must not run in any job that has `CLOUDFLARE_API_TOKEN`, and `pull_request_target` stays out.
+- **A red run on `main` (accepted, not tested):** stopping a deploy after a failed `ci` run relies on GitHub's documented `needs` behaviour. Testing it would mean breaking `main`, which branch protection blocks.
+- **Pages or Workers (resolved):** Cloudflare's Pages docs now say "Start new projects with Workers". They don't say Pages is deprecated, so this project stays on Pages, as decided on 2026-11-01.
 - **Public previews (accepted):** Cloudflare Pages preview URLs are public by default. That's fine for this site, which holds nothing private.
 - **PRs from forks (accepted):** GitHub doesn't give workflows from forks access to secrets, so those PRs get CI but no preview. This is the safe behaviour.
 
@@ -53,12 +64,11 @@ Ordered by risk. Each is one concept and one PR.
 2. **Production deploy:** R5, R7 and R8. Needs the Cloudflare account, project and secrets.
 3. **Preview deploys:** R6.
 
-## Manual steps for later slices
-**Slice 2:**
-- Before it starts, decide between Cloudflare Pages and Workers.
-- Create a Cloudflare account and the project.
-- Create an API token with only the Cloudflare Pages Edit permission, and find the account ID.
-- Add them to GitHub Secrets as `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Claude never sees or handles these.
-- Add `cloudflare/wrangler-action` to the allowed actions, because the repo currently allows only GitHub-owned ones.
+## Manual setup
+**Done for slice 2:**
+- A Cloudflare account and the `pipelines-intro` Pages project, with `main` as its production branch.
+- An API token with only the Cloudflare Pages Edit permission.
+- A `production` environment on GitHub, limited to `main`, holding `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Claude never sees or handles these.
+- `cloudflare/wrangler-action` added to the repo's allowed actions.
 
-**Slice 3:** nothing new is expected. The slice 3 plan will confirm this.
+**Slice 3:** the `production` secrets can't be used by PRs, by design, so previews will probably need their own environment and secrets. The slice 3 plan will confirm this.

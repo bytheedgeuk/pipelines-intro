@@ -22,3 +22,11 @@ One line per decision: date, what, why. Newest at the bottom.
 - 2026-10-31: The repo allows squash-merging only, so temporary commits on a branch never reach `main`'s history.
 - 2026-10-31: Branches must be up to date before merging, so a green result can't go stale when `main` moves. On a solo repo this rarely adds work.
 - 2026-10-31: CI's checkout doesn't keep its token on disk, because no later step needs it and dependency scripts run in the same job.
+- 2026-11-01: The host stays Cloudflare Pages rather than Workers, despite Cloudflare's docs now suggesting Workers for new projects, because Pages was the host asked for, it isn't described as deprecated, and it's simple for a static site.
+- 2026-11-01: Deploy is a separate job with no checkout, so the token never shares a job with repo code or dependencies.
+- 2026-11-01: Deploy publishes CI's artifact rather than rebuilding, so what's published is what was tested.
+- 2026-11-01: Deploy secrets live in a `production` environment limited to `main`, not at repo level, so a workflow on any other branch can't read them.
+- 2026-11-01: `wrangler-action` is pinned to an exact commit and Wrangler to an exact version, because this job holds a secret.
+- 2026-11-01: Wrangler stays out of `package.json` because it needs Node 22 or newer while `engines` allows Node 20, and neither CI's checks nor local work need it installed.
+- 2026-11-01: `wrangler-action` doesn't get `gitHubToken`, because the environment already shows the deployment on GitHub and this avoids granting `deployments: write`.
+- 2026-11-01: There's no automatic rollback, as the intent says. Rollback is by hand in Cloudflare, or by reverting the PR.
