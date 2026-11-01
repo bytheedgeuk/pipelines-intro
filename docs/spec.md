@@ -18,7 +18,7 @@ Source intent: `intent/2026-10-31-ci-cd-pipeline.md`. Status: accepted.
 ## Architecture
 The site is static. `src/` is copied to `dist/` by the build, and `dist/` is what gets published. Logic lives in JS modules, tested by Node without a browser.
 
-GitHub Actions runs the pipeline, and `make` stays the only interface to the commands, so CI runs exactly what a person runs locally:
+GitHub Actions runs the pipeline, and `make` stays the only interface to the checks, so CI runs exactly what a person runs locally:
 
 ```
 push or PR ──> CI: lint, test, build ──pass──> PR: preview deploy
@@ -41,7 +41,7 @@ ci: lint, test, build, save dist/ ──pass──> deploy: download dist/, uplo
 ```
 
 - The job holding the token has no checkout and runs none of the repo's code, so a compromised dev dependency in `ci` can't reach the token.
-- It publishes the files `ci` tested, rather than building them again.
+- It publishes the files `ci` built after its checks passed, rather than building them again. The tests run against `src/`, and `dist/` is a plain copy of it.
 - The secrets live in a `production` environment that only `main` can use.
 
 ## Interfaces

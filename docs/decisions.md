@@ -24,7 +24,8 @@ One line per decision: date, what, why. Newest at the bottom.
 - 2026-10-31: CI's checkout doesn't keep its token on disk, because no later step needs it and dependency scripts run in the same job.
 - 2026-11-01: The host stays Cloudflare Pages rather than Workers, despite Cloudflare's docs now suggesting Workers for new projects, because Pages was the host asked for, it isn't described as deprecated, and it's simple for a static site.
 - 2026-11-01: Deploy is a separate job with no checkout, so the token never shares a job with repo code or dependencies.
-- 2026-11-01: Deploy publishes CI's artifact rather than rebuilding, so what's published is what was tested.
+- 2026-11-01: Deploy publishes CI's artifact rather than rebuilding, so what's published is what CI built after its checks passed.
+- 2026-11-01: The repo's allowed actions now also include `cloudflare/wrangler-action`, as the one exception to GitHub-owned actions only, because the deploy needs it.
 - 2026-11-01: Deploy secrets live in a `production` environment limited to `main`, not at repo level, so a workflow on any other branch can't read them.
 - 2026-11-01: `wrangler-action` is pinned to an exact commit and Wrangler to an exact version, because this job holds a secret.
 - 2026-11-01: Wrangler stays out of `package.json` because it needs Node 22 or newer while `engines` allows Node 20, and neither CI's checks nor local work need it installed.

@@ -5,7 +5,7 @@
 ## Context
 CI checks every change, but the site isn't published anywhere. This slice makes a merge to `main` publish the site to Cloudflare Pages, but only if CI passes. It covers R5, R7 and R8 in `docs/spec.md`. PR previews (R6) come in slice 3.
 
-Status: plan approved. Milestone 1 is done; Milestone 2 is in progress. Nothing is deployed yet.
+Status: plan approved. Milestones 1 and 2 are done; Milestone 3 is in progress. Nothing is deployed yet.
 
 ## New terms, in plain English
 | Term | Meaning | In this slice | Azure DevOps equivalent |
@@ -25,7 +25,7 @@ merge to main
 
 The two jobs are deliberately separate:
 - **The job holding the token runs none of the repo's code.** It doesn't download the repo or run `npm ci`; it only takes the finished `dist/` and uploads it. A compromised dev dependency running in `ci` can't reach the token.
-- **What gets published is exactly what was tested.** It's the same files CI built, not a second build.
+- **What gets published is what CI built.** It's the same files, built after the checks passed, not a second build. The tests run against `src/`, and `dist/` is a plain copy of it.
 
 ## What changes in the workflow
 **`ci` job:** one new step, "Save the built site", which runs only on pushes to `main` (`actions/upload-artifact@v7`, kept for 1 day).
@@ -51,7 +51,7 @@ No code in `src/` changes, and Wrangler isn't added to `package.json`.
 
 ## Decisions to record in `docs/decisions.md`
 - Deploy uses a separate job with no checkout, so the token never shares a job with repo code or dependencies.
-- Deploy publishes CI's artifact rather than rebuilding, so what's published is what was tested.
+- Deploy publishes CI's artifact rather than rebuilding, so what's published is what CI built after its checks passed.
 - Secrets live in a `production` environment limited to `main`, not at repo level, so a workflow on any other branch can't read them.
 - Pin `wrangler-action` to an exact commit and Wrangler to an exact version, because this job holds a secret.
 - Wrangler stays out of `package.json`, because it needs Node 22+ while `engines` allows Node 20, and CI and local use don't need it installed.
