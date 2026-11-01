@@ -11,11 +11,11 @@ flowchart TD
         ci["Download code, install Node 24, npm ci"] --> lint["make lint"]
         lint --> test["make test"]
         test --> build["make build"]
+        build --> isMain{"Push to main?"}
+        isMain -- "Yes" --> save["Save dist/ as an artifact"]
     end
 
-    build --> isMain{"Push to main?"}
     isMain -- "No" --> stop["Finished: deploy is skipped"]
-    isMain -- "Yes" --> save["Save dist/ as an artifact"]
     save --> download
 
     subgraph deployJob["deploy job: production environment, main only"]
