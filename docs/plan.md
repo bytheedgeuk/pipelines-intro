@@ -1,95 +1,127 @@
-# Plan: slice 1, CI only
+# Plan: slice 2, production deploy
 
 <!-- Current slice only. Old plans live in git history and their PRs. -->
 
 ## Context
-Lint, tests and the build only run when someone remembers to run them. This slice makes GitHub run all three on every push and pull request (PR), and show the result. It covers R1 to R4 in `docs/spec.md`. Deploys come in slices 2 and 3.
+CI checks every change, but the site isn't published anywhere. This slice makes a merge to `main` publish the site to Cloudflare Pages, but only if CI passes. It covers R5, R7 and R8 in `docs/spec.md`. PR previews (R6) come in slice 3.
 
-Status: plan approved; the repo is public. Milestones 1 and 2 are done, with code review fixes applied; waiting for the PR to be reviewed and merged.
+Status: plan approved. Milestones 1 and 2 are done; Milestone 3's reviews are done and their fixes applied. Nothing is deployed yet.
 
-## The terms, in plain English
+## New terms, in plain English
 | Term | Meaning | In this slice | Azure DevOps equivalent |
 |---|---|---|---|
-| **Workflow** | An automated process, written as a YAML file in the repo | `.github/workflows/ci.yml`, named "CI" | Pipeline |
-| **Trigger** | The event that starts a workflow | A push or a PR | `trigger` and `pr` |
-| **Job** | A group of steps that run together on one machine | One job, shown as `ci (push)` or `ci (pull_request)` | Job |
-| **Step** | One task in a job, run in order. If one fails, the rest are skipped by default | Six, listed below | Step |
-| **Runner** | The temporary machine that runs a job, wiped afterwards | GitHub-hosted Ubuntu | Agent |
-| **Action** | A ready-made, reusable step someone has published | `checkout`, `setup-node` | Task |
-| **Secret** | An encrypted value, such as a password, that workflows can use and logs mask | None until slice 2 | Secret variable |
-| **Environment** | A named deploy target, like "production", that can have its own secrets and approval rules | None until slice 2 | Environment |
+| **Artifact** | Files saved from one job so a later job can use them | The built `dist/` folder | Pipeline artifact |
+| **`needs`** | Makes one job wait for another, and normally skips it if that job fails | `deploy` needs `ci` | `dependsOn` |
+| **Environment** | A named deploy target with its own secrets and rules | `production`, whose secrets only `main` can use | Environment |
+| **API token** | A password for a program, limited to certain actions | Can only edit Cloudflare Pages | Service connection |
+| **Rollback** | Putting a previous version back live | A button in Cloudflare's dashboard | Redeploying an earlier run |
+
+## How the pipeline will work
+```
+merge to main
+  -> ci job: lint, test, build, then save dist/ as an artifact
+  -> deploy job (only if ci passed): download dist/, upload it to Cloudflare
+```
+
+The two jobs are deliberately separate:
+- **The job holding the token doesn't install the repo's dev dependencies.** It doesn't download the repo or run `npm ci`; it only takes the finished `dist/` and uploads it, so a compromised dev dependency in `ci` can't read the token directly. Wrangler does read `dist/` while it holds the token, which is why the deploy refuses a `_worker.js`.
+- **What gets published is what CI built.** It's the same files, built after the checks passed, not a second build. The tests run against `src/`, and `dist/` is a plain copy of it.
+
+## What changes in the workflow
+**`ci` job:** one new step, "Save the built site", which runs only on pushes to `main` (`actions/upload-artifact@v7`, kept for 7 days).
+
+**New `deploy` job:**
+- **Runs only when:** the event is a push to `main`, and `ci` passed (`needs: ci`). On PRs and other branches it shows as skipped.
+- **Environment:** `production`, with its live URL shown on GitHub.
+- **Concurrency:** one deploy at a time, so quick merges can't finish out of order.
+- **Steps:**
+  1. Download `dist/` (`actions/download-artifact`, pinned to v8.0.2's commit)
+  2. Stop if `dist/_worker.js` exists
+  3. Install Node 24 (`actions/setup-node`, pinned to v7.1.0's commit), because Wrangler needs Node 22 or newer
+  4. Install Wrangler `4.156.0`, before the token is available
+  5. Upload to Cloudflare with `cloudflare/wrangler-action`, pinned to commit `953926a2e2182532811c01a25e53647d93bf07c0` (v4.1.3), running `pages deploy dist --project-name=<name> --branch=main --commit-hash=<commit>`
+
+`--branch=main` has to be stated because there's no repo checkout for Wrangler to read it from.
 
 ## Files that change
-- `.github/workflows/ci.yml`: new, described below
-- `README.md`: add a CI section; add a checklist item for the required `ci` check
-- `docs/decisions.md`: add the decisions below
+- `.github/workflows/ci.yml`: as above
+- `README.md`: Deploy section with the live URL, how to roll back, and the Node version needed for Wrangler; tidy the setup checklist
+- `docs/spec.md`: update Architecture, Interfaces and the manual steps; record the live URL
+- `docs/decisions.md`: the decisions below
 - `docs/plan.md`: this plan
-- `docs/spec.md`, `intent/2026-10-31-ci-cd-pipeline.md`: already written, committed with this slice
 
-`CLAUDE.md` has uncommitted Learning edits. They stay uncommitted and out of this PR, because they're a separate concept.
-
-## What the workflow does
-- **Triggers:** every push to any branch, and every PR.
-- **Permissions:** read-only access to the repo.
-- **Job:** one job, on `ubuntu-latest`, with a 10-minute time limit. It shows as `ci (push)` or `ci (pull_request)`, depending on what started it.
-- **Steps, in order:**
-  1. Download the code (`actions/checkout@v7`), without keeping its token on disk
-  2. Install Node 24 (`actions/setup-node@v7`)
-  3. `npm ci`, which installs the exact versions in `package-lock.json`
-  4. `make lint`
-  5. `make test`
-  6. `make build`
+No code in `src/` changes, and Wrangler isn't added to `package.json`.
 
 ## Decisions to record in `docs/decisions.md`
-- Keep both triggers, as asked, even though a push to a branch with an open PR runs CI twice. The two runs test different things: the branch itself, and the branch merged with `main`.
-- CI runs `make`, not npm directly, so it runs exactly what a person runs locally.
-- Use Node 24, a supported long-term release within the `engines` range. The local machine has Node 20, which reached end of life in April 2026; it still works here.
-- Make the repo public, because branch protection isn't available on a private repo on GitHub Free, and nothing in it is private.
-- Harden the public repo: secret scanning and push protection on, Dependabot alerts on (no automatic PRs), only GitHub-owned actions allowed, and approval required for workflow runs from all outside contributors. A leaked secret or untrusted workflow code is the main risk once a repo is public.
-- Use one job, so a failure stops the run early and the workflow stays easy to read.
-- Don't cache dependencies: the install is small, and it's one less thing to explain or debug.
-- Pin GitHub's own actions to major version tags, for readability. Third-party actions that handle secrets, such as `wrangler-action` in slice 2, get pinned to an exact commit, because a moved tag there could expose a secret.
-- No Prettier check in CI: the requirement names three commands, and each PR covers one concept. This answers the "revisit when CI lands" note. It could be its own later PR.
-- From code review: use distinct job names and require only the PR one; allow squash-merging only; require branches to be up to date; don't keep the checkout token on disk.
+- Deploy uses a separate job with no checkout, so the token doesn't share a job with the repo's dev dependencies.
+- Deploy publishes CI's artifact rather than rebuilding, so what's published is what CI built after its checks passed.
+- Secrets live in a `production` environment limited to `main`, not at repo level, so a workflow on any other branch can't read them.
+- Pin every action in the deploy job to an exact commit and Wrangler to an exact version, because this job can reach a secret.
+- Wrangler stays out of `package.json`, because it needs Node 22+ while `engines` allows Node 20, and CI and local use don't need it installed.
+- Don't pass `gitHubToken` to `wrangler-action`, because the environment already shows the deployment on GitHub and this avoids granting `deployments: write`.
+- No automatic rollback, as the intent says. Rollback is by hand in Cloudflare or by reverting the PR.
+- From the reviews: refuse `dist/_worker.js`; install Wrangler before the token is available; keep the artifact for 7 days; queue deploys; no admin bypass on `production`; no separate build job for now.
 
 ## Order of work
-1. **Milestone 1: write it locally.** Write the workflow and docs on `ci/github-actions`, then commit only the files listed above.
+1. **Milestone 1: set up the accounts.** The steps under "What needs doing by hand" get done first. Then Claude allows `cloudflare/wrangler-action` on the repo, and confirms the environment and secret *names* exist through GitHub's API. GitHub never reveals secret values, and Claude doesn't need them.
+
+   Checkpoint: stop, report what's confirmed, wait for go-ahead.
+
+2. **Milestone 2: write it locally.** On `ci/production-deploy`, write the workflow and docs, then commit only the files listed above.
    Verify with `make build`, `make test`, `make lint`, a YAML syntax check and the verifier agent.
 
    Checkpoint: stop, paste output, wait for go-ahead to push and open a PR.
 
-2. **Milestone 2: prove it on GitHub.** Push and open the PR. Confirm both the push run and the PR run go green. Push a temporary lint error, confirm the run goes red and the test and build steps are skipped, then revert it. Squash-merging removes the temporary commits from `main`'s history.
+3. **Milestone 3: prove it's safe on the PR.** Push and open the PR. Confirm CI goes green and `deploy` is skipped on both runs. Run `/code-review` and `/security-review`, and report what they find before fixing anything.
 
-   Checkpoint: stop, share the run links and any failing log lines, and wait for the PR to be reviewed and merged.
+   Checkpoint: stop, share run links and review results, wait for the PR to be reviewed and squash-merged.
 
-3. **Milestone 3: confirm on `main`.** After the merge, confirm a run on `main` goes green. Then give the recap and a "break it on purpose" exercise.
+4. **Milestone 4: confirm it's live.** After the merge, confirm `ci` and `deploy` go green on `main`, and that the live URL serves the same files as `dist/`. Then give the recap and a "break it on purpose" exercise.
 
-   Checkpoint: stop, report the results, wait for go-ahead before planning slice 2.
+   Checkpoint: stop, report results and what to check in a browser, wait for go-ahead before planning slice 3.
 
 ## What needs doing by hand
-**Slice 1, no accounts or secrets needed:**
-1. Review and squash-merge the PR.
-2. Go to Settings → Branches and edit the rule for `main`. Turn on "Require status checks to pass", select `ci (pull_request)`, and turn on "Require branches to be up to date". This is what turns a red CI run from a warning into a block. The rule already requires a PR, with no approvals and no bypassing.
+**Never paste a token or account ID into this chat.**
 
-Manual steps for later slices are in `docs/spec.md`.
+1. **Install Node 24 locally**, because Wrangler won't run on Node 20. With nvm, run `nvm install 24`, then `node -v` to confirm. This also matches what CI uses. To make it the default, run `nvm alias default 24`.
+2. **Create a free Cloudflare account** at dash.cloudflare.com, if you don't have one.
+3. **Create the project.** In the repo folder:
+   ```
+   npx wrangler@4.156.0 login
+   npx wrangler@4.156.0 pages project create
+   ```
+   Enter `pipelines-intro` as the name and `main` as the production branch. Then run `npx wrangler@4.156.0 logout`, so the laptop stops holding that login.
+4. **Tell Claude the project name and its `.pages.dev` URL.** These are public. If the name is taken, Cloudflare may add a suffix to the URL.
+5. **Create the API token:** in Cloudflare, go to My Profile → API Tokens → Create Token → Custom token. Give it one permission, Account → Cloudflare Pages → Edit, limited to one account. Copy it straight into step 7.
+6. **Find the account ID** in the Cloudflare dashboard.
+7. **Create the GitHub environment:** go to Settings → Environments → New environment and name it `production`.
+   - Under Deployment branches and tags, choose "Selected branches and tags" and add `main`.
+   - Under Environment secrets, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+8. **Review and squash-merge the PR**, in Milestone 3.
+
+Cloudflare's screens may differ slightly from these names.
 
 ## Risks
-- The runner uses Node 24 and the local machine uses Node 20, so something could pass in one place and fail in the other. A fresh clone passes on Node 20; the first CI run is the first test on Node 24.
-- The repo is public, so anyone can read its code, history and PRs, and fork it. A scan of all branches' history and the PR text found no secrets. Going back to private is possible, but anything already copied stays copied. Actions on standard runners is free for public repos.
-- PRs from forks can't reach secrets, and workflow runs from all outside contributors need approval.
-- `main` already blocks direct pushes, so every change, including this slice, has to go through a PR. Until `ci (pull_request)` is added to the rule, a red run still can't block a merge.
-- GitHub can only show a workflow's real behaviour once it's pushed, so the local syntax check proves little.
+- **Allowed actions:** if `wrangler-action` isn't allowed before the push, GitHub rejects the whole workflow, including CI. That's why it gets allowed in Milestone 1.
+- **First deploy:** this exact setup (`wrangler-action` with no checkout) only gets tested when it runs on `main`, because deploy is skipped on PRs. Cloudflare's examples all include a checkout. If it fails, the site just isn't published yet. A wrong setting gets fixed in place and the job re-run; a workflow problem gets fixed through a normal PR. If it can't work without a checkout, that needs a fresh decision, because it changes a security choice.
+- **Blank page with green CI:** the inline script in `src/index.html` isn't linted or tested, so a green run doesn't prove the page works. This matters more now the site is public, so it stays a browser check by hand. Moving that script into a tested module could be its own later PR.
+- **Direct Upload:** this project can't switch to Cloudflare's Git integration later without creating a new project.
+- **Compromised dev dependency:** one running in `ci` could still change the published site, though it couldn't take the token that way. It would need a malicious dependency update to be merged.
+- **Wrangler's dependencies:** there's no lockfile in the deploy job, so those below the top level aren't locked, and Wrangler's code runs with the token.
+- **Token scope:** if the token leaked, someone could change the account's Pages projects, but nothing else in the account. You can revoke it in Cloudflare.
+- **Free plan limit:** Cloudflare lists 500 builds a month, and its docs don't say whether Direct Upload counts. It's far above what this repo will use.
 
 ## Proof
-- A green run from a push, and one from a PR.
-- A red run from a deliberate lint error, with later steps skipped.
-- A green run on `main` after the merge.
+- On the PR: both CI runs are green, and `deploy` is skipped on both.
+- On `main`: `ci` and `deploy` are green, and the job's log shows the Cloudflare URL.
+- The live URL returns 200, and its `greet.js` matches `dist/greet.js`.
 
-**Not proven in CI:** a failing test or build. Test failure is left for the exercise. Each command runs as its own step, and a failing step fails the run the same way.
+**Not proven:** that a red `ci` on `main` stops a deploy. Testing that means breaking `main`, which branch protection now blocks. It relies on GitHub's documented `needs` behaviour.
 
-**Check by hand:** that the PR page shows both checks, and that branch protection blocks a merge when `ci (pull_request)` is red.
+**Check by hand:** the live page shows "Hello, world!" in a browser, and `production` shows on the repo's main page with the right URL.
 
 ## Left alone
-- `npm audit` reports 5 moderate issues, all through ESLint's dev dependencies. The suggested fix would install a very old ESLint (4.0.0), so it isn't one to apply. The site doesn't ship these packages, and CI doesn't run the audit.
-- Deploys, previews and Prettier in CI.
-- ESP leftovers noted in the previous plan, except the "hardware" wording in `docs/spec.md`, which went when the spec was written.
+- PR preview deploys (slice 3).
+- Prettier in CI, and moving the inline script into a module: possible later PRs.
+- The 5 moderate `npm audit` issues in dev dependencies: `dist/` doesn't contain them.
+- Old merged branches.
