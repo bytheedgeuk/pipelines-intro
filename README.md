@@ -41,6 +41,7 @@ The `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets are in the `produ
 ## Docs
 - `docs/spec.md`: requirements and architecture
 - `docs/plan.md`: plan for the current slice
+- `docs/pipeline.md`: diagram of the CI/CD pipeline
 - `docs/decisions.md`: decisions and why they were made
 - `intent/`: ideas
 - `REVIEW.md`: review instructions

@@ -29,6 +29,7 @@ I'm a PM learning DevOps (I can read code, but I'm not deeply technical), so:
 - `docs/plan.md` holds the plan for the current slice only.
 - If implementation departs from `plan.md`, update the plan in the same commit.
 - Record any architectural choice in `docs/decisions.md` (one line + why).
+- When `.github/workflows/` changes, update `docs/pipeline.md` in the same PR.
 - Work on a branch; never commit to main directly.
 
 ## Architecture

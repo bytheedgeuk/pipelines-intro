@@ -38,3 +38,4 @@ One line per decision: date, what, why. Newest at the bottom.
 - 2026-11-01: Wrangler stays out of `package.json` because it needs Node 22 or newer while `engines` allows Node 20, and neither CI's checks nor local work need it installed.
 - 2026-11-01: `wrangler-action` doesn't get `gitHubToken`, because the environment already shows the deployment on GitHub and this avoids granting `deployments: write`.
 - 2026-11-01: There's no automatic rollback, as the intent says. Rollback is by hand in Cloudflare, or by reverting the PR.
+- 2026-11-01: The pipeline diagram is Mermaid text in `docs/pipeline.md`, because GitHub draws it, and it gets reviewed and versioned with the workflow.
