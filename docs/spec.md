@@ -40,7 +40,8 @@ The deploy is a separate job that runs only on a push to `main`, and only if the
 ci: lint, test, build, save dist/ ──pass──> deploy: download dist/, upload to Cloudflare
 ```
 
-- The job holding the token has no checkout and runs none of the repo's code, so a compromised dev dependency in `ci` can't reach the token.
+- The job holding the token has no checkout and installs none of the repo's dev dependencies, so a compromised one in `ci` can't read the token directly.
+- Wrangler reads `dist/` while it holds the token, and it treats a `_worker.js` as server code, which could pull in local files. The deploy stops if that file exists.
 - It publishes the files `ci` built after its checks passed, rather than building them again. The tests run against `src/`, and `dist/` is a plain copy of it.
 - The secrets live in a `production` environment that only `main` can use.
 
@@ -53,6 +54,8 @@ ci: lint, test, build, save dist/ ──pass──> deploy: download dist/, uplo
 - **PRs with merge conflicts (accepted):** GitHub doesn't start the PR run while a PR has merge conflicts, so R2 only applies once the conflicts are fixed. The required check keeps such a PR unmergeable until then.
 - **Branch protection (resolved):** GitHub doesn't offer branch protection on a private repo on GitHub Free, so the repo was made public. `main` requires a PR and a passing `ci (pull_request)` check, with no bypassing.
 - **Secrets and untrusted code (slices 2 and 3):** `npm ci`, lint, test and build must not run in any job that has `CLOUDFLARE_API_TOKEN`, and `pull_request_target` stays out.
+- **Compromised dev dependency (accepted):** one running in `ci` could change the published site, because `ci` builds what gets deployed. It would need a malicious dependency update to be merged. A separate build job would close this if the risk grows.
+- **Wrangler's dependencies (accepted):** the deploy job has no lockfile, so Wrangler's dependencies below the top level aren't locked, and its code runs with the token. A compromised upstream package could reach the token.
 - **A red run on `main` (accepted, not tested):** stopping a deploy after a failed `ci` run relies on GitHub's documented `needs` behaviour. Testing it would mean breaking `main`, which branch protection blocks.
 - **Pages or Workers (resolved):** Cloudflare's Pages docs now say "Start new projects with Workers". They don't say Pages is deprecated, so this project stays on Pages, as decided on 2026-11-01.
 - **Public previews (accepted):** Cloudflare Pages preview URLs are public by default. That's fine for this site, which holds nothing private.

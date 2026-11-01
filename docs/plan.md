@@ -5,7 +5,7 @@
 ## Context
 CI checks every change, but the site isn't published anywhere. This slice makes a merge to `main` publish the site to Cloudflare Pages, but only if CI passes. It covers R5, R7 and R8 in `docs/spec.md`. PR previews (R6) come in slice 3.
 
-Status: plan approved. Milestones 1 and 2 are done; Milestone 3 is in progress. Nothing is deployed yet.
+Status: plan approved. Milestones 1 and 2 are done; Milestone 3's reviews are done and their fixes applied. Nothing is deployed yet.
 
 ## New terms, in plain English
 | Term | Meaning | In this slice | Azure DevOps equivalent |
@@ -24,19 +24,22 @@ merge to main
 ```
 
 The two jobs are deliberately separate:
-- **The job holding the token runs none of the repo's code.** It doesn't download the repo or run `npm ci`; it only takes the finished `dist/` and uploads it. A compromised dev dependency running in `ci` can't reach the token.
+- **The job holding the token doesn't install the repo's dev dependencies.** It doesn't download the repo or run `npm ci`; it only takes the finished `dist/` and uploads it, so a compromised dev dependency in `ci` can't read the token directly. Wrangler does read `dist/` while it holds the token, which is why the deploy refuses a `_worker.js`.
 - **What gets published is what CI built.** It's the same files, built after the checks passed, not a second build. The tests run against `src/`, and `dist/` is a plain copy of it.
 
 ## What changes in the workflow
-**`ci` job:** one new step, "Save the built site", which runs only on pushes to `main` (`actions/upload-artifact@v7`, kept for 1 day).
+**`ci` job:** one new step, "Save the built site", which runs only on pushes to `main` (`actions/upload-artifact@v7`, kept for 7 days).
 
 **New `deploy` job:**
 - **Runs only when:** the event is a push to `main`, and `ci` passed (`needs: ci`). On PRs and other branches it shows as skipped.
 - **Environment:** `production`, with its live URL shown on GitHub.
+- **Concurrency:** one deploy at a time, so quick merges can't finish out of order.
 - **Steps:**
-  1. Download `dist/` (`actions/download-artifact@v8`)
-  2. Install Node 24, because Wrangler needs Node 22 or newer
-  3. Upload to Cloudflare with `cloudflare/wrangler-action`, pinned to commit `953926a2e2182532811c01a25e53647d93bf07c0` (v4.1.3), using Wrangler pinned to `4.156.0`, running `pages deploy dist --project-name=<name> --branch=main --commit-hash=<commit>`
+  1. Download `dist/` (`actions/download-artifact`, pinned to v8.0.2's commit)
+  2. Stop if `dist/_worker.js` exists
+  3. Install Node 24 (`actions/setup-node`, pinned to v7.1.0's commit), because Wrangler needs Node 22 or newer
+  4. Install Wrangler `4.156.0`, before the token is available
+  5. Upload to Cloudflare with `cloudflare/wrangler-action`, pinned to commit `953926a2e2182532811c01a25e53647d93bf07c0` (v4.1.3), running `pages deploy dist --project-name=<name> --branch=main --commit-hash=<commit>`
 
 `--branch=main` has to be stated because there's no repo checkout for Wrangler to read it from.
 
@@ -50,13 +53,14 @@ The two jobs are deliberately separate:
 No code in `src/` changes, and Wrangler isn't added to `package.json`.
 
 ## Decisions to record in `docs/decisions.md`
-- Deploy uses a separate job with no checkout, so the token never shares a job with repo code or dependencies.
+- Deploy uses a separate job with no checkout, so the token doesn't share a job with the repo's dev dependencies.
 - Deploy publishes CI's artifact rather than rebuilding, so what's published is what CI built after its checks passed.
 - Secrets live in a `production` environment limited to `main`, not at repo level, so a workflow on any other branch can't read them.
-- Pin `wrangler-action` to an exact commit and Wrangler to an exact version, because this job holds a secret.
+- Pin every action in the deploy job to an exact commit and Wrangler to an exact version, because this job can reach a secret.
 - Wrangler stays out of `package.json`, because it needs Node 22+ while `engines` allows Node 20, and CI and local use don't need it installed.
 - Don't pass `gitHubToken` to `wrangler-action`, because the environment already shows the deployment on GitHub and this avoids granting `deployments: write`.
 - No automatic rollback, as the intent says. Rollback is by hand in Cloudflare or by reverting the PR.
+- From the reviews: refuse `dist/_worker.js`; install Wrangler before the token is available; keep the artifact for 7 days; queue deploys; no admin bypass on `production`; no separate build job for now.
 
 ## Order of work
 1. **Milestone 1: set up the accounts.** The steps under "What needs doing by hand" get done first. Then Claude allows `cloudflare/wrangler-action` on the repo, and confirms the environment and secret *names* exist through GitHub's API. GitHub never reveals secret values, and Claude doesn't need them.
@@ -99,9 +103,11 @@ Cloudflare's screens may differ slightly from these names.
 
 ## Risks
 - **Allowed actions:** if `wrangler-action` isn't allowed before the push, GitHub rejects the whole workflow, including CI. That's why it gets allowed in Milestone 1.
-- **First deploy:** this exact setup (`wrangler-action` with no checkout) only gets tested when it runs on `main`, because deploy is skipped on PRs. Cloudflare's examples all include a checkout. If it fails, the site just isn't published yet, and the fix goes through a normal PR. If it can't work without a checkout, that needs a fresh decision, because it changes a security choice.
+- **First deploy:** this exact setup (`wrangler-action` with no checkout) only gets tested when it runs on `main`, because deploy is skipped on PRs. Cloudflare's examples all include a checkout. If it fails, the site just isn't published yet. A wrong setting gets fixed in place and the job re-run; a workflow problem gets fixed through a normal PR. If it can't work without a checkout, that needs a fresh decision, because it changes a security choice.
 - **Blank page with green CI:** the inline script in `src/index.html` isn't linted or tested, so a green run doesn't prove the page works. This matters more now the site is public, so it stays a browser check by hand. Moving that script into a tested module could be its own later PR.
 - **Direct Upload:** this project can't switch to Cloudflare's Git integration later without creating a new project.
+- **Compromised dev dependency:** one running in `ci` could still change the published site, though it couldn't take the token that way. It would need a malicious dependency update to be merged.
+- **Wrangler's dependencies:** there's no lockfile in the deploy job, so those below the top level aren't locked, and Wrangler's code runs with the token.
 - **Token scope:** if the token leaked, someone could change the account's Pages projects, but nothing else in the account. You can revoke it in Cloudflare.
 - **Free plan limit:** Cloudflare lists 500 builds a month, and its docs don't say whether Direct Upload counts. It's far above what this repo will use.
 

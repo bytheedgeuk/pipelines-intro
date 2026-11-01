@@ -32,6 +32,10 @@ A merge to `main` that passes CI publishes `dist/` to Cloudflare Pages, with no 
 
 **To undo a bad deploy:** in Cloudflare, open the project's Deployments page, open the menu on an earlier production deployment and choose "Rollback to this deployment". Then revert the PR, otherwise the next merge publishes the bad change again.
 
+**If a deploy fails because of a wrong secret or setting:** fix it on GitHub or Cloudflare, then re-run the failed `deploy` job from the Actions tab within 7 days. No PR is needed.
+
+The deploy stops if `dist/_worker.js` exists, because this site is static and that file could expose the Cloudflare token.
+
 The `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets are in the `production` environment on GitHub, which only `main` can use. Running Wrangler, Cloudflare's command-line tool, on your own machine needs Node 22 or newer; day-to-day work doesn't need it. To make Node 24 your default with nvm, use `nvm alias default 24`.
 
 ## Docs

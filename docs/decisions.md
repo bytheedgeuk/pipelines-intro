@@ -23,11 +23,18 @@ One line per decision: date, what, why. Newest at the bottom.
 - 2026-10-31: Branches must be up to date before merging, so a green result can't go stale when `main` moves. On a solo repo this rarely adds work.
 - 2026-10-31: CI's checkout doesn't keep its token on disk, because no later step needs it and dependency scripts run in the same job.
 - 2026-11-01: The host stays Cloudflare Pages rather than Workers, despite Cloudflare's docs now suggesting Workers for new projects, because Pages was the host asked for, it isn't described as deprecated, and it's simple for a static site.
-- 2026-11-01: Deploy is a separate job with no checkout, so the token never shares a job with repo code or dependencies.
+- 2026-11-01: Deploy is a separate job with no checkout, so the token doesn't share a job with the repo's dev dependencies. Wrangler still reads the files in `dist/` while it holds the token, so this isn't complete isolation.
+- 2026-11-01: Deploy stops if `dist/_worker.js` exists, because Wrangler packages that file as server code and can pull local files into it, which could expose the token. The site is static, so it never needs one.
+- 2026-11-01: Wrangler is installed in its own step before the token is available, so install scripts can't read it. Wrangler's own code still sees the token when it runs, and its dependencies below the top level aren't locked.
+- 2026-11-01: Every action in the deploy job is pinned to an exact commit, because each one can affect the job that can reach the token.
+- 2026-11-01: The artifact is kept for 7 days, so a failed deploy can be re-run after fixing a setting.
+- 2026-11-01: Deploys queue rather than overlap, so quick merges can't finish out of order.
+- 2026-11-01: There's no separate build job for now, so a compromised dev dependency could still change the published site, though it couldn't take the token that way. It would need a malicious dependency update to be merged, and a separate job is more pipeline to learn.
+- 2026-11-01: Admins can't bypass the `production` environment's rules, so its branch limit also applies to the repo owner.
 - 2026-11-01: Deploy publishes CI's artifact rather than rebuilding, so what's published is what CI built after its checks passed.
 - 2026-11-01: The repo's allowed actions now also include `cloudflare/wrangler-action`, as the one exception to GitHub-owned actions only, because the deploy needs it.
 - 2026-11-01: Deploy secrets live in a `production` environment limited to `main`, not at repo level, so a workflow on any other branch can't read them.
-- 2026-11-01: `wrangler-action` is pinned to an exact commit and Wrangler to an exact version, because this job holds a secret.
+- 2026-11-01: Wrangler is pinned to an exact version, because this job holds a secret.
 - 2026-11-01: Wrangler stays out of `package.json` because it needs Node 22 or newer while `engines` allows Node 20, and neither CI's checks nor local work need it installed.
 - 2026-11-01: `wrangler-action` doesn't get `gitHubToken`, because the environment already shows the deployment on GitHub and this avoids granting `deployments: write`.
 - 2026-11-01: There's no automatic rollback, as the intent says. Rollback is by hand in Cloudflare, or by reverting the PR.
